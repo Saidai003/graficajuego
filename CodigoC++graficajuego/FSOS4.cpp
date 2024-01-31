@@ -1,0 +1,342 @@
+#include <iostream>
+#include <stdio.h>
+#include <curses.h>
+#include <unistd.h>
+#include <time.h>
+#include <vector>
+#include <sstream>
+
+using namespace std;
+
+class F{ //Archivo
+    public:
+    string name;
+    string exte = ".txt";
+    string autor = "";
+    string data = "";
+    bool read = true;
+    bool write = true;
+    bool exec = true;
+    bool open = true;
+    int date;
+    int size = 0; //en bytes
+
+    F(string name, string exte){
+        this->name = name;
+        this->exte = exte;
+         this->date = time(nullptr);
+    };
+
+    string metadata() {
+    stringstream ss;
+   ss << "Name: " << name << endl;
+ss << "Extension type: " << exte << endl;
+ss << "Author: " << autor << endl;
+ss << "Data: " << data << endl;
+ss << "Read: " << read << endl;
+ss << "Write: " << write << endl;
+ss << "Execute: " << exec << endl;
+ss << "Open: " << open << endl;
+ss << "Date in seconds: " << date << endl;
+ss << "Size (bytes): " << size;
+
+
+    
+    return ss.str();
+    }
+
+    void save(string newdata){
+       data = newdata;
+    }
+
+};
+
+class D{ //Directorio
+
+    public:
+
+    string name;
+    string autor;
+    bool write = true;
+    bool open = true;
+    int date;
+    int size; //en bytes
+    vector<F> *files;
+    vector<D> *dires;
+
+    D(){
+        
+    };
+
+    D(string name, string autor, bool write, bool open){
+        this->name = name;
+        this->autor = autor;
+        this->write = write;
+        this->open = open;
+        this->date = time(nullptr);
+    };
+
+    string metadata() {
+    stringstream ss;
+    ss << name << endl;
+    ss << date << endl;
+    ss << open << endl;
+    ss << "Tfiles: " << files->size() << endl;
+    ss << "TDire: " << dires->size() << endl;
+    ss << "Size(bytes): " << size << endl; //Podria ser mas preciso
+    return ss.str();
+    }
+
+    void updateSize(){
+        int totalsize = 0;
+        for (auto it = dires->rbegin(); it != dires->rend(); ++it) {
+            totalsize += sizeof(*it);
+        }
+        for (auto it = files->rbegin(); it != files->rend(); ++it) {
+            totalsize += sizeof(*it);
+        }
+        size = totalsize;
+    }
+    void addDire(D newdire){
+        dires->push_back(newdire);
+    }
+
+
+};
+
+    char screen[32][32] = {
+    {'<', '>', 'x', '+', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '},
+    {' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '},
+    {'-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-'},
+    {' ', '|', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '|'},
+    {' ', '|', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '|'},
+    {' ', '|', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '|'},
+    {' ', '|', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '|'},
+    {' ', '|', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '|'},
+    {' ', '|', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '|'},
+    {' ', '|', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '|'},
+    {' ', '|', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '|'},
+    {' ', '|', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '|'},
+    {' ', '|', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '|'},
+    {' ', '|', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '|'},
+    {' ', '|', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '|'},
+    {' ', '|', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '|'},
+    {' ', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '|'}
+    };
+
+
+    char bootscreen[32][32] = {
+    {' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '},
+    {' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '#', '#', '#', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '},
+    {' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '@', '@', '@', '#', '#', '#', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '},
+    {' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '@', '@', '@', '@', '@', '#', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '},
+    {' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '@', '@', '@', '#', '#', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '},
+    {' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '@', '@', '@', '#', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '},
+    {' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '@', '@', '@', '#', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '},
+    {' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '@', '@', '@', '@', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '},
+    {' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', 'B', 'A', 'N', 'A', 'N', 'A', 'O', 'S', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '},
+    {' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '@', '@', '@', '@', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '},
+    {' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '@', '@', '@', '@', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '},
+    {' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '@', '@', '@', '@', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '},
+    {' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '@', '@', '@', '@', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '},
+    {' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '@', '@', '@', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '},
+    {' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '},
+    {' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '},
+    {' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '}
+    };
+
+    void RecursiveNav(D *current, int cursorX, int cursorY){
+
+        //Carpeta actual
+
+
+    while(1){
+         for (int i = 0; i < 16; i++) {
+            for (int j = 0; j < 32; j++) {
+                if(i == cursorY && j == cursorX) {
+                    if(i == 0 && j == 0){
+                        printf("(<)");
+                    }else if(i == 0 && j == 1){
+                        printf("(>)");
+                    }else if(i == 0 && j == 2){
+                        printf("(X)");
+                    }else if(i == 0 && j == 3){
+                        printf("(+)");
+                    }else if(i >= 3 && j == 0){
+                        printf("|||->"); 
+                    }else{
+                        printf("o");
+                    }
+                 
+                }else{
+          if (i == 0 && j > 4 && j < current->name.size()+5){
+    printf("%c", current->name[j-5]);
+            }else{
+                bool printed = false;
+                for(int z = current->dires->size() - 1; z >= 0; --z){
+                    if(i > 3 && z == (i - 4) && j > 1 && (j-2) < (*current->dires)[z].name.size()){
+                        printf("%c", (*current->dires)[z].name[j-2]); //nuevo, no lo sabia
+                        printed = true;
+                        break;
+                    }
+                }
+                if(!printed){
+                    for(int b = current->files->size() - 1; b >= 0; --b){
+                        if(i > (3 + current->dires->size()) && b == (i - 4 - current->dires->size()) && j > 0 && (j-2) < current->dires->size()){
+                            printf("%c", (*current->files)[b].name[j-2]);
+                            printed = true;
+                            break;
+                        }
+                    }
+                }
+                if(!printed){
+                    printf("%c", screen[i][j]); 
+                }
+            } 
+        }
+                    
+                
+    }
+    printf("\n");
+}
+
+        // input
+        int input = getch();
+
+        //Actualizar la posicion del cursor basada en la entrada
+        if (input == 'w' && cursorY > 0) {
+            cursorY--;
+        } else if (input == 'a' && cursorX > 0) {
+            cursorX--; 
+        } else if (input == 's' && cursorY < 15) {
+            cursorY++;
+        } else if (input == 'd' && cursorX < 31) {
+            cursorX++;
+        }
+        //Metodo: Crear carpeta
+        if(input == 'e' && cursorX == 3 && cursorY == 0){
+            try{
+                printf("\033[H\033[J"); 
+                printf("Write folder's name and press Enter to create it\n");
+                printf("Folder's name: ");
+
+                endwin(); 
+                string dirname;
+                
+                cin >> dirname;
+
+                D newdir("[" + dirname + "]","user", true, true); // Crear un nuevo directorio
+                //F * file = &newfile;
+
+                //(*current->dires)[z].
+                (*current->dires).emplace_back(newdir); // Añadir el nuevo directorio a 'files'
+
+
+                dirname = "";
+                
+
+                printf("\033[H\033[J"); 
+
+                initscr(); 
+                noecho(); 
+                cbreak(); 
+
+            }catch (const std::out_of_range& e) {
+                //no existe la carpeta en ese indice=posicion
+            }
+        }
+        //Metodo: Acceder a carpeta.
+              for(int z = (*current->dires).size() - 1; z >= 0; --z){
+                auto it = current->dires[z];
+                        if(input == 'e'  && cursorY-4 == z && cursorX > 0){
+                            try{
+                                   printf("\033[H\033[J");
+                               RecursiveNav(current.dires, cursorX, cursorY);
+
+                            }catch (const std::out_of_range& e) {
+                                //no existe la carpeta en ese indice=posicion
+                            }
+                        }          
+                }
+        //crear archivo (PROBLEMA) ni siquiera se ejecuta la funcion.
+
+/*  ^y           
+    !             Y
+    !             |   x-->
+    !             v                                                                
+        --->x          
+    */
+        //Separacion de 3 filas antes de archivos y carpetas. respetar!
+        // Solo se puede editar o crear un archivo cuando el cursor estan en Y=0
+        // CursorY = i   CursorX = j
+        if(input == 'e' || input == 'q' && cursorX == 5 && cursorY == 5 ){
+                printf("\033[H\033[J"); 
+                printf("Write File's name and press Enter to create it\n");
+                printf("Files's name: ");
+
+                endwin(); 
+
+              
+                string  filename;
+              
+                cin >> filename;
+
+                F newfile(filename, "exe"); 
+                //F * file = &newfile;
+
+                //(*current->dires)[z].
+                (*current->files).emplace_back(newfile); // Añadir el nuevo directorio a 'files'
+
+                //showdire = &newdir; // esto sirve para cambiar de directorio
+
+                filename = "";
+                
+
+                printf("\033[H\033[J"); 
+
+                initscr(); 
+                noecho(); 
+                cbreak(); 
+
+        }
+
+        usleep(100000);
+        if(input == 'e' && cursorX == 0  && cursorY == 0){
+            break;
+        }
+            printf("\033[H\033[J");
+    } // Print the screen
+
+}
+
+int main() {
+    initscr(); 
+    noecho(); 
+    cbreak(); 
+        // Move the cursor back to the beginning
+        //printf("\033[H");
+
+    D desktop("main","user", true, true);
+    D *showdire = &desktop;
+
+    int cursorX = 1;
+    int cursorY = 1;
+
+    int start;
+
+  for (int i = 0; i < 15; i++) {
+            for (int j = 8; j < 24; j++) {
+                        printf("%c ", bootscreen[i][j]);
+            }
+            printf("\n");
+    }
+    //usleep(1000000);
+    printf("Presione 2 veces cualquier tecla para comenzar");
+    scanf("%d", &start);
+      printf("\033[H\033[J");
+        RecursiveNav(*showdire, cursorX, cursorY);
+
+    endwin(); 
+
+    return 0;
+}
